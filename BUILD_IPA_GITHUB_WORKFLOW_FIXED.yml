@@ -1,0 +1,84 @@
+name: Build WC Recharge IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Verify source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f WCRechargeIOS.xcodeproj/project.pbxproj
+          test -f WCRechargeIOS/Info.plist
+          /usr/bin/plutil -lint WCRechargeIOS/Info.plist
+          test -f WCRechargeIOS/AppDelegate.swift
+          test -f WCRechargeIOS/RechargeViewController.swift
+          test -f WCRechargeIOS/Resources/login-context.js
+
+      - name: Build unsigned iOS app
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$PWD/build" "$PWD/Payload" "$PWD/IPA_Output"
+          mkdir -p "$PWD/build" "$PWD/IPA_Output"
+
+          xcodebuild \
+            -project WCRechargeIOS.xcodeproj \
+            -target WCRechargeIOS \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CONFIGURATION_BUILD_DIR="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            clean build
+
+          APP="$PWD/build/WCRechargeIOS.app"
+          PLIST="$APP/Info.plist"
+          EXEC="$APP/WCRechargeIOS"
+
+          echo "Validating built app..."
+          test -d "$APP"
+          test -s "$PLIST"
+          test -s "$EXEC"
+          /usr/bin/plutil -lint "$PLIST"
+          /usr/bin/file "$EXEC"
+
+          EXEC_NAME=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$PLIST")
+          test "$EXEC_NAME" = "WCRechargeIOS"
+          test -s "$APP/$EXEC_NAME"
+
+          mkdir -p "$PWD/Payload"
+          /usr/bin/ditto "$APP" "$PWD/Payload/WCRechargeIOS.app"
+
+          cd "$PWD"
+          /usr/bin/zip -qry "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa" Payload
+
+          echo "Validating IPA archive..."
+          /usr/bin/unzip -t "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa"
+          /usr/bin/unzip -l "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa" | grep 'Payload/WCRechargeIOS.app/Info.plist'
+          /usr/bin/unzip -l "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa" | grep 'Payload/WCRechargeIOS.app/WCRechargeIOS'
+          test -s "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa"
+          ls -lh "$PWD/IPA_Output/WCRechargeIOS-unsigned.ipa"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WCRechargeIOS-unsigned-IPA
+          path: IPA_Output/WCRechargeIOS-unsigned.ipa
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

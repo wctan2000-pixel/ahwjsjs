@@ -1,0 +1,15 @@
+Windows 一键 Build 未签名 IPA
+
+1. 把本压缩包解压。
+2. 新建 GitHub Private 仓库，把“解压后根目录里的全部内容”上传到仓库根目录。
+   仓库首页必须直接看到：
+   - .github
+   - WCRechargeIOS.xcodeproj
+   - WCRechargeIOS
+3. GitHub -> Actions -> Build WC Recharge IPA -> Run workflow -> Run workflow。
+4. 等绿色 Success。
+5. 打开该次运行的 Summary，下载 Artifacts: WCRechargeIOS-unsigned-IPA。
+6. 下载的是 ZIP，解压得到 WCRechargeIOS-unsigned.ipa。
+7. 用你自己的证书/签名方式签名后安装到 iPhone。
+
+注意：不要只上传外层文件夹；.github 必须位于仓库根目录。

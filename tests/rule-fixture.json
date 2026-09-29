@@ -1,0 +1,1 @@
+[{"match": "web_save", "replacements": [["wx_appid=", "wx_appid=101502376"]]}, {"match": "mobile_save_goods", "replacements": [["wx_appid=wx951bdcac522929b6", "wx_appid=101502376"], ["wx_appid=wx5a3bbeac0d87c75a", "wx_appid=101502376"]]}]
